@@ -1,0 +1,176 @@
+#include <mega128.h>
+#include <delay.h>
+#asm
+   .equ __lcd_port=0x1B;
+#endasm                                     
+#include <lcd.h>   
+
+unsigned int delay = 250;   //딜레이
+unsigned int i;             //for문 사용시
+unsigned int j;             //for문 사용시
+unsigned int mode = 16;     //8모드 / 16모드 상태 함수 (기본값은 16함수)
+unsigned int brick = 0;     //reset을 따로 만들기 위해 main함수에서 operate를 반복시키는데 이때 operate를 초기화 하기 위해 operate함수를 탈출 시킬 변수
+unsigned int random = 0;    //랜덤 클락에서 받아온 숫자
+unsigned int num = 0;       //랜덤으로 정해진 당첨 숫자
+unsigned int brk = 0;       //reset 함수에서 main 함수에서 resett을 루프하는데 resett함수를 바로 탈출 시켜서 실행을 못하게 하는 변수 
+int keyout;
+
+void main(void)
+{
+    PORTA=0xff;
+    DDRA=0xff; 
+    PORTB = 0x00;
+    DDRB = 0xff;
+    PORTC = 0xff;
+    DDRC = 0xff;
+    PORTD = 0x00;
+    DDRD = 0x00; 
+    PORTE = 0x00;
+    DDRE = 0xff;
+    PORTF = 0xff;
+    DDRF = 0x00;    
+    PORTG = 0xff;   //노래가 꺼진 상태   
+    DDRG = 0xff;
+    
+    switch(PINF & 0xF0)
+    {
+        case 0x00: num = 0; break;
+        case 0x10: num = 1; break;
+        case 0x20: num = 2; break;
+        case 0x30: num = 3; break;
+        case 0x40: num = 4; break;
+        case 0x50: num = 5; break;
+        case 0x60: num = 6; break;
+        case 0x70: num = 7; break;
+        case 0x80: num = 8; break;
+        case 0x90: num = 9; break;
+        case 0xA0: num = 10;break;
+        case 0xB0: num = 11;break;
+        case 0xC0: num = 12;break;
+        case 0xD0: num = 13;break;
+        case 0xE0: num = 14;break;
+        case 0xF0: num = 15;break;
+    }
+    
+    lcd_clear();
+    lcd_gotoxy(0,1);
+    lcd_putsf("START GAME");
+    delay_ms(5000);
+    
+    keyout = 0xfe;
+    
+    for(i=0; i<=3; i++)
+    {
+        PORTD = keyout;
+        delay_ms(1);
+        switch (PIND & 0xF0)
+        {   
+            case 0x70:
+            if(12 + i == num)
+            {
+                lcd_clear();
+                    lcd_gotoxy(0,0);
+                    lcd_putsf("Swith Input");
+                    lcd_putchar( (num + 1) / 10 + '0' );      
+                    lcd_putchar( (num + 1) % 10 + '0' );
+                    lcd_putsf(" is bomb number");
+                    lcd_gotoxy(6, 1);
+                    lcd_putsf("Well done");
+                    break;    
+            }
+            
+            lcd_clear();
+            lcd_gotoxy(0,0);
+            lcd_putsf("ur SW:");
+            lcd_putchar( (13 + i) / 10 + '0');
+            lcd_putchar( (13 + i) % 10 + '0');
+            lcd_putsf(" is not bomb");
+            lcd_gotoxy(1,1);
+            lcd_putsf("Select Next SW");
+            PORTB |= 0x10 << i;
+            delay_ms(100);
+            break;
+            
+            case 0xB0:
+            if(8 + i == num)
+            {
+                lcd_clear();
+                    lcd_gotoxy(0,0);
+                    lcd_putsf("this sw");
+                    lcd_putchar( (num + 1) / 10 + '0');
+                    lcd_putchar( (num % 10 + 1) + '0');
+                    lcd_putsf(" is bomb number");
+                    lcd_gotoxy(6,1);
+                    lcd_putsf("Well done");
+                    break;    
+            }
+            
+            lcd_clear();
+            lcd_gotoxy(0,0);
+            lcd_putsf("SW: ");
+            lcd_putchar( (9+i) / 10 + '0');
+            lcd_putchar( (9 + i) % i + '0');
+            lcd_putsf(" not bomb");
+            lcd_gotoxy(1,1);
+            lcd_putsf("Select next SW");
+            PORTB |= 0x01 << i;
+            delay_ms(100);
+            break;
+            
+            case0xD0:
+            if(4 + i == num)
+            {
+                brk = 1;
+                lcd_clear();
+                lcd_gotoxy(0,0);
+                lcd_putsf("SW input");
+                lcd_putchar( (num + 1) / 10 + '0');
+                lcd_putchar( (num + 1) % 10 + '0');
+                lcd_putsf("is Bomb number");
+                lcd_gotoxy(6,1);
+                lcd_putsf("Well done"); 
+                break;   
+            }
+            
+            lcd_clear();
+            lcd_gotoxy(0,0);    
+            lcd_putsf("SW:");
+            lcd_putchar((5+i)/10+'0'); 
+            lcd_putchar((5+i)%10+'0');
+            lcd_putsf(" Not Bomb");
+            lcd_gotoxy(1,1);
+            lcd_putsf("Select Next SW"); 
+            PORTB |= 0x10<<i;
+            delay_ms(100);
+            break;
+            
+ 
+           case 0xE0:    
+            if(0+i==num){ 
+                brk=1;
+                lcd_clear();     
+                lcd_gotoxy(0,0);    
+                lcd_putsf("SW input");   
+                lcd_putchar((num+1)/10+'0'); 
+                lcd_putchar((num+1)%10+'0');
+                lcd_putsf("is Bomb number");
+                lcd_gotoxy(6,1);
+                lcd_putsf("Well done"); 
+                break; 
+            }
+            
+            lcd_clear();
+            lcd_gotoxy(0,0);    
+            lcd_putsf("SW:");
+            lcd_putchar((1+i)/10+'0'); 
+            lcd_putchar((1+i)%10+'0');
+            lcd_putsf(" Not Bomb");
+            lcd_gotoxy(1,1);
+            lcd_putsf("Select Next SW");
+            PORTB |= 0x01<<i;  
+            delay_ms(100);
+            break; 
+    }
+        keyout = (keyout << 1) + 0x01;      
+    }
+}

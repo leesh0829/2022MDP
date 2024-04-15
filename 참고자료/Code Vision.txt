@@ -1,0 +1,14 @@
+Code Vision
+
+
+00000000
+입력:0
+출력:1
+
+DDR( )->해당 도트
+ㄴ>데이터의 방향결정 레지스터
+
+ex) 포트 A를 출력으로 사용
+DDRA = 0xff  ff:8개의 비트를 모두 출력 설정
+PORTA = 0xff; :PORTA를 다 active low 설정
+두 명령어는 반복문(while) 밖에 지정

@@ -1,0 +1,25 @@
+if(c == 1) //입력 받는 상태
+for(k=1; k<=16; k++)
+vertical[?] // vertical 
+red_led[?]/green_led[?] // red/green
+d[k] = vertical[?] //몇번째 입력 vertcal 값 넣기
+e[k] = red_led[?]/green_led[?] //몇번째 입력 red/green 값 넣기
+
+
+
+
+
+
+
+반복문{
+for(int l = 1; l<=k; l++)
+portb = d[k] //port b의 d함수의 k번째 입력(마지막입력순서) 까지 값 넣고 led키기
+portc = e[k] //port c의 e함수의 k번째 입력(마지막입력순서) 까지 값 넣고 led 키기
+}
+
+
+당첨이 됬으면, c = 0;
+
+
+
+

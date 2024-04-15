@@ -1,0 +1,702 @@
+    #include <mega128.h>
+    #include <delay.h>
+    #asm                       
+        .equ __lcd_port = 0x1b //a포트로 사용 
+    #endasm                  
+    #include <lcd.h>
+
+    int keyMatrix(unsigned char in); //키매트릭스 함수
+    unsigned char vertical[4] = {0x10/*0,1,2,3*/, 0x20/*4,5,6,7*/, 0x80/*8,9,A,B*/, 0x40/*C,D,E,F*/}; //키매트릭스와 led의 가로줄, 색 상관없이 배열 값이 0이면 0,1,2,3 1이면 4,5,6,7 2면 8,9,A,B 3면 C,D,E,F다. 
+    unsigned char red_led[4] = {0xfe/*0,4,8,C*/, 0xfb/*1,5,9,D*/, 0xef/*2,6,A,E*/, 0xbf/*3,7,B,F*/}; //초록 led의 세로줄 +0이면 0,1,2,3 +1이면 4,5,6,7 +2이면 8,9,A,B +3이면 C,D,E,F가 된다  
+    unsigned char green_led[4] = {0xfd/*0,4,8,C*/, 0xf7/*1,5,9,D*/, 0xdf/*2,6,A,E*/, 0x7f/*3,7,B,F*/}; 
+    unsigned int num = 0;       //랜덤으로 정해진 당첨 숫자
+    unsigned int tri = 0;       //키매트릭스를 입력받는 상태, 0이 안받는 상태, 1이 받는 상태
+    unsigned int mode = 16; //모드 기본값 16
+    unsigned int brk = 0; //2번 이상돌때 reset문 반복방지 탈출  
+
+    void reset(void); //다시 시작하기 위한 함수   
+    
+    void manager(void);
+
+    void modee() //모드 설정 함수
+    {
+        if(PINF == 0xfe) //16모드 입력
+        {
+            mode = 16; //모드에 16저장
+            lcd_clear();
+            lcd_gotoxy(0,0);
+            lcd_putsf("Select mode");
+            lcd_gotoxy(0,1);
+            lcd_putsf("Currect mode: 16"); //선택한 모드를 lcd에 출력 
+            PORTB = 0x00;
+            PORTC = 0xff; // led 기본상태(off)
+        }
+         
+        if(PINF == 0xfd) //8모드 입력
+        {
+            mode = 8; //모드에 8저장
+            lcd_clear();
+            lcd_gotoxy(0,0);
+            lcd_putsf("Select mode"); 
+            lcd_gotoxy(0,1);
+            lcd_putsf("Currect mode: 8"); //선택한 모드 lcd에 출력
+            PORTB = 0x00;
+            PORTC = 0xff; //led 기본상태(off)
+        }   
+    }
+            
+    void buzzer(void) //부저함수
+    {
+        PORTG = 0xfe;  
+    }
+
+    void buzzer2(void) //부저함수
+    {
+        PORTG = 0xfd;
+    }
+
+    void buzzer_off(void) //모든부저 off
+    {
+        PORTG = 0xff;
+    }
+    
+
+    int keyMatrix(unsigned char in) //키매트릭스 함수 
+    {
+             int key; //반환 값 저장  
+                
+               switch (in) {  //입력을 받는것은 PIN
+                case 0x7e : key = 0;
+                    break;  
+                case 0x7d : key = 1; // 0111 1110이면, 1을 return
+                    break;
+                case 0x7b : key = 2; // 0111 1011이면, 2를 반환
+                    break;
+                case 0x77 : key = 3;
+                    break;
+                case 0xbe : key = 4;
+                    break;
+                case 0xbd : key = 5;
+                    break;
+                case 0xbb : key = 6;
+                    break;
+                case 0xb7 : key = 7;
+                    break;
+                case 0xde : key = 8;
+                    break;
+                case 0xdd : key = 9;
+                    break;
+                case 0xdb : key = 10;
+                    break;
+                case 0xd7 : key = 11;
+                    break;
+                case 0xee : key = 12;
+                    break;
+                case 0xed : key = 13;
+                    break;                                               
+                case 0xeb : key = 14;
+                    break;  
+                case 0xe7 : key = 15;
+                    break;    
+               }   
+             
+               return key; //key 리턴
+               
+    }
+
+    void manager(void)//게임실행 함수
+    {        
+            int keyout; // 키매트릭스 신호
+            int i; //for문
+            unsigned char matrix; //PIND를 저장할 변수 
+            
+            lcd_init(16);
+            
+            lcd_gotoxy(3,1);
+            lcd_puts("START GAME"); //게임 시작 
+            
+            lcd_gotoxy(0,0);
+            
+            delay_ms(1000);
+             
+            lcd_clear(); 
+               
+            /*if(mode == 16) { 
+                lcd_gotoxy(0,1);
+                lcd_puts("0123456789ABCDEF"); //16모드일때 사용 가능한 스위치를 LCD에 출력
+                lcd_gotoxy(0,0); // 위치를 안잡으면 lcd오류발생 
+            }
+            else if(mode == 8) {
+                lcd_gotoxy(0,1);
+                lcd_puts("01234567"); //8모드일때 사용 가능한 스위치를 lcd에 출력 
+                lcd_gotoxy(0,0); // 위치를 안잡으면 lcd오류발생 
+            } */ 
+            
+            lcd_gotoxy(0,0); // 위치를 안잡으면 lcd오류발생
+            
+            buzzer(); 
+            
+            delay_ms(500);
+             
+            while(tri) { //tri가 1일때 반복
+                keyout = 0xfe; //keyout에 1111 1110 저장 
+                    for(i = 0; i<=3; i++) { //4x4임으로 반복문을 4번 돌려줌, ex)3x3 -> i = 0; i<=2; i++
+                        PORTD = keyout; //행 스캔 출력
+                        matrix = PIND; //매트릭스에 PIND값 저장 
+
+                                  
+                        if(keyMatrix(matrix) == 0)  { //키매트릭스 함수의 switch문에 PIND값을 넣고, 리턴값이 0일때             
+                                if(keyMatrix(matrix) != num) { //리턴값이 난수값과 같지 않을때 
+                                    PORTB = vertical[0]; //0번 스위치 해당하는 가로줄 호출
+                                    PORTC = green_led[0]; //0번 스위치 해당하는 세로줄 호출 
+                                    lcd_gotoxy(0,0);
+                                    lcd_puts("0 SW is not bomb"); //해당 스위치 위치를 lcd 출력 
+                                    delay_us(500); 
+                                    //lcd_gotoxy(0, 1);
+                                    //lcd_puts(" "); //lcd에 공백을 넣어 0번 스위치 비움
+                                } 
+                                else { // sw번호 = num(난수)         
+                                    PORTB = vertical[0]; //0번 스위치 해당하는 가로줄 호출
+                                    PORTC = red_led[0]; //0번 스위치 붉은 부분에 해당하는 세로줄 호출 
+                                    lcd_clear(); 
+                                    //lcd_gotoxy(0, 0);  
+                                    //delay_ms(500); 
+                                    //lcd_puts("0 SW is bomb"); //몇 번 스위치가 터졌는지 ㅣcd에 표시
+                                    lcd_gotoxy(6, 1);
+                                    lcd_puts("BOMB");
+                                    buzzer2(); //buzzer on
+                                    delay_ms(3000);
+                                    buzzer_off(); //buzzer off
+                                    brk = 1; //리셋문 반복 방지
+                                    tri = 0; //while문 탈출
+                                } 
+                            }
+                                 
+                                 
+                            if(keyMatrix(matrix) == 1)  { //키매트릭스 함수의 리턴값이 1일때 
+                                if(keyMatrix(matrix) != num) {
+                                    PORTB = vertical[0];
+                                    PORTC = green_led[1];
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("1 SW is not bomb"); //해당 스위치 위치 출력
+                                    //lcd_gotoxy(1, 1);
+                                    //lcd_puts(" "); //lcd에서 1을 지움
+                                    }
+                                else { 
+                                    PORTB = vertical[0];
+                                    PORTC = red_led[1]; 
+                                    lcd_clear();
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("1 SW is bomb");
+                                    lcd_gotoxy(6, 1);
+                                    lcd_puts("BOMB");  
+                                    buzzer2(); 
+                                    delay_ms(3000);
+                                    buzzer_off(); 
+                                    brk = 1; 
+                                    tri = 0;
+                                    }
+                            }  
+                                      
+                                     
+                            if(keyMatrix(matrix) == 2)  {
+                                if(keyMatrix(matrix) != num) {
+                                    PORTB = vertical[0];
+                                    PORTC = green_led[2];
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("2 SW is not bomb");
+                                    //lcd_gotoxy(2, 1);
+                                    //lcd_puts(" ");
+                                    }
+                                else {
+                                    PORTB = vertical[0];
+                                    PORTC = red_led[2];
+                                    lcd_clear();
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("2 SW is bomb");
+                                    lcd_gotoxy(6, 1);
+                                    lcd_puts("BOMB");
+                                    buzzer2(); 
+                                    delay_ms(3000);
+                                    buzzer_off(); 
+                                    brk = 1; 
+                                    tri = 0;
+                                    }
+                            }
+                                      
+                            if(keyMatrix(matrix) == 3)  {
+                                if(keyMatrix(matrix) != num) {
+                                    PORTB = vertical[0]; 
+                                    PORTC = green_led[3]; 
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("3 SW is not bomb");
+                                    //lcd_gotoxy(3, 1);
+                                    //lcd_puts(" ");
+                                    }
+                                else {
+                                    PORTB = vertical[0];
+                                    PORTC = red_led[3]; 
+                                    lcd_clear();
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("3 SW is bomb");
+                                    lcd_gotoxy(6, 1);
+                                    lcd_puts("BOMB");
+                                    buzzer2(); 
+                                    delay_ms(3000);
+                                    buzzer_off();  
+                                    brk = 1; 
+                                    tri = 0;
+                                    }
+                            }
+                            
+                            if(keyMatrix(matrix) == 4)  {
+                                if(keyMatrix(matrix) != num) {
+                                    PORTB = vertical[1];
+                                    PORTC = green_led[0];
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("4 SW is not bomb");
+                                    //lcd_gotoxy(4, 1);
+                                    //lcd_puts(" ");
+                                    }
+                                else {
+                                    PORTB = vertical[1];
+                                    PORTC = red_led[0];
+                                    lcd_clear();  
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("4 SW is bomb");
+                                    lcd_gotoxy(6, 1);
+                                    lcd_puts("BOMB"); 
+                                    buzzer2(); 
+                                    delay_ms(3000);
+                                    buzzer_off(); 
+                                    brk = 1; 
+                                    tri = 0;
+                                    }
+                            } 
+                                     
+                            if(keyMatrix(matrix) == 5)  {
+                                if(keyMatrix(matrix) != num) {
+                                    PORTB = vertical[1];
+                                    PORTC = green_led[1];
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("5 SW is not bomb");
+                                    //lcd_gotoxy(5, 1);
+                                    //lcd_puts(" ");
+                                    }
+                                else {
+                                    PORTB = vertical[1];
+                                    PORTC = red_led[1]; 
+                                    lcd_clear();
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("5 SW is bomb");
+                                    lcd_gotoxy(6, 1);
+                                    lcd_puts("BOMB"); 
+                                    buzzer2(); 
+                                    delay_ms(3000);
+                                    buzzer_off();   
+                                    brk = 1; 
+                                    tri = 0;
+                                    }  
+                            } 
+                                     
+                            if(keyMatrix(matrix) == 6)  {
+                                if(keyMatrix(matrix) != num) {
+                                    PORTB = vertical[1];
+                                    PORTC = green_led[2];
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("6 SW is not bomb");
+                                    //lcd_gotoxy(6, 1);
+                                    //lcd_puts(" ");
+                                    }
+                                else {
+                                    PORTB = vertical[1];
+                                    PORTC = red_led[2]; 
+                                    lcd_clear(); 
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("6 SW is bomb");
+                                    lcd_gotoxy(6, 1);
+                                    lcd_puts("BOMB");  
+                                    buzzer2(); 
+                                    delay_ms(3000);
+                                    buzzer_off();  
+                                    brk = 1; 
+                                    tri = 0;
+                                    } 
+                            }
+                                     
+                            if(keyMatrix(matrix) == 7)  {  
+                                if(keyMatrix(matrix) != num) {
+                                    PORTB = vertical[1];
+                                    PORTC = green_led[3];  
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("7 SW is not bomb");
+                                    //lcd_gotoxy(7, 1);
+                                    //lcd_puts(" ");
+                                    }
+                                else { 
+                                    PORTB = vertical[1];
+                                    PORTC = red_led[3]; 
+                                    lcd_clear(); 
+                                    lcd_gotoxy(0, 0);
+                                    delay_us(500);
+                                    lcd_puts("7 SW is bomb");
+                                    lcd_gotoxy(6, 1);
+                                    lcd_puts("BOMB"); 
+                                    buzzer2(); 
+                                    delay_ms(3000);
+                                    buzzer_off();  
+                                    brk = 1; 
+                                    tri = 0;
+                                    }  
+                            } 
+                            
+                            if(mode == 16) { //모드 16일때만 8번~15번 스위치를 누를 수 있게 설정 
+                                if(keyMatrix(matrix) == 8)  { 
+                                    if(keyMatrix(matrix) != num) {
+                                        PORTB = vertical[2];
+                                        PORTC = green_led[0]; 
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("8 SW is not bomb");
+                                        //lcd_gotoxy(8, 1);
+                                        //lcd_puts(" ");
+                                        }
+                                    else {
+                                        PORTB = vertical[2];
+                                        PORTC = red_led[0]; 
+                                        lcd_clear();
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("8 SW is bomb");
+                                        lcd_gotoxy(6, 1);
+                                        lcd_puts("BOMB");   
+                                        buzzer2(); 
+                                        delay_ms(3000);
+                                        buzzer_off();  
+                                        brk = 1; 
+                                        tri = 0;
+                                        } 
+                                }
+                            }
+                                     
+                            
+                            if(mode == 16) {         
+                                if(keyMatrix(matrix) == 9)  { 
+                                    if(keyMatrix(matrix) != num) {
+                                        PORTB = vertical[2]; 
+                                        PORTC = green_led[1];     
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("9 SW is not bomb");
+                                        //lcd_gotoxy(9, 1);
+                                        //lcd_puts(" ");
+                                        }
+                                    else {
+                                        PORTB = vertical[2];
+                                        PORTC = red_led[1]; 
+                                        lcd_clear();
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("9 SW is bomb");
+                                        lcd_gotoxy(6, 1);
+                                    lcd_puts("BOMB"); 
+                                        buzzer2(); 
+                                        delay_ms(3000);
+                                        buzzer_off();  
+                                        brk = 1; 
+                                        tri = 0;
+                                        }
+                                }
+                            }  
+                                      
+                             
+                            if(mode == 16) {        
+                                if(keyMatrix(matrix) == 10)  {
+                                    if(keyMatrix(matrix) != num) {
+                                        PORTB = vertical[2]; 
+                                        PORTC = green_led[2]; 
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("A SW is not bomb");
+                                        //lcd_gotoxy(10, 1);
+                                        //lcd_puts(" ");
+                                        }
+                                    else {
+                                        PORTB = vertical[2];
+                                        PORTC = red_led[2]; 
+                                        lcd_clear(); 
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("A SW is bomb");
+                                        lcd_gotoxy(6, 1);
+                                        lcd_puts("BOMB");  
+                                        buzzer2(); 
+                                        delay_ms(3000);
+                                        buzzer_off();    
+                                        brk = 1; 
+                                        tri = 0;
+                                        }  
+                                }
+                            }
+                             
+                            if(mode == 16) {         
+                                if(keyMatrix(matrix) == 11)  {
+                                    if(keyMatrix(matrix) != num) {
+                                        PORTB = vertical[2]; 
+                                        PORTC = green_led[3];
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("B SW is not bomb");
+                                        //lcd_gotoxy(11, 1);
+                                        //lcd_puts(" ");
+                                        }
+                                    else {
+                                        PORTB = vertical[2];
+                                        PORTC = red_led[3];   
+                                        lcd_clear(); 
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("B SW is bomb");
+                                        lcd_gotoxy(6, 1);
+                                        lcd_puts("BOMB");  
+                                        buzzer2(); 
+                                        delay_ms(3000);
+                                        buzzer_off();    
+                                        brk = 1; 
+                                        tri = 0;
+                                        } 
+                                }
+                            }
+                            
+                            if(mode == 16) {
+                                if(keyMatrix(matrix) == 12)  { 
+                                    if(keyMatrix(matrix) != num) {
+                                        PORTB = vertical[3];
+                                        PORTC = green_led[0]; 
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("C SW is not bomb");
+                                        //lcd_gotoxy(12, 1);
+                                        //lcd_puts(" ");
+                                        }
+                                    else { 
+                                        PORTB = vertical[3];
+                                        PORTC = red_led[0];   
+                                        lcd_clear(); 
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("C SW is bomb");
+                                        lcd_gotoxy(6, 1);
+                                        lcd_puts("BOMB");  
+                                        buzzer2(); 
+                                        delay_ms(3000);
+                                        buzzer_off();   
+                                        brk = 1; 
+                                        tri = 0;
+                                        }
+                                } 
+                            }
+                            
+                            if(mode == 16) {         
+                                if(keyMatrix(matrix) == 13)  {
+                                    if(keyMatrix(matrix) != num) {
+                                        PORTB = vertical[3]; 
+                                        PORTC = green_led[1];   
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("D SW is not bomb");
+                                        //lcd_gotoxy(13, 1);
+                                        //lcd_puts(" ");
+                                        }
+                                    else {
+                                        PORTB = vertical[3];
+                                        PORTC = red_led[1];  
+                                        lcd_clear();
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("D SW is bomb");
+                                        lcd_gotoxy(6, 1);
+                                        lcd_puts("BOMB"); 
+                                        buzzer2(); 
+                                        delay_ms(3000);
+                                        buzzer_off();  
+                                        brk = 1; 
+                                        tri = 0;
+                                        } 
+                                } 
+                            }
+                            
+                            if(mode == 16) {         
+                                if(keyMatrix(matrix) == 14)  {
+                                    if(keyMatrix(matrix) != num) {
+                                        PORTB = vertical[3]; 
+                                        PORTC = green_led[2];  
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("E SW is not bomb");
+                                        //lcd_gotoxy(14, 1);
+                                        //lcd_puts(" ");
+                                        }
+                                    else {
+                                        PORTB = vertical[3];
+                                        PORTC = red_led[2];    
+                                        lcd_clear();
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("E SW is bomb");
+                                        lcd_gotoxy(6, 1);
+                                        lcd_puts("BOMB");  
+                                        buzzer2(); 
+                                        delay_ms(3000);
+                                        buzzer_off();  
+                                        brk = 1; 
+                                        tri = 0;
+                                        }  
+                                }
+                            }
+                             
+                            if(mode == 16) {        
+                                if(keyMatrix(matrix) == 15)  {
+                                    if(keyMatrix(matrix) != num) {
+                                        PORTB = vertical[3]; 
+                                        PORTC = green_led[3]; 
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("F SW is not bomb");
+                                        //lcd_gotoxy(15, 1);
+                                        //lcd_puts(" ");
+                                        }
+                                    else {
+                                        PORTB = vertical[3];
+                                        PORTC = red_led[3];
+                                        lcd_clear(); 
+                                        lcd_gotoxy(0, 0);
+                                        delay_us(500);
+                                        lcd_puts("F SW is bomb");
+                                        lcd_gotoxy(6, 1);
+                                        lcd_puts("BOMB");  
+                                        buzzer2(); 
+                                        delay_ms(3000);
+                                        buzzer_off();  
+                                        brk = 1;  
+                                        tri = 0;
+                                        }   
+                                }
+                            }  
+                            
+                                  
+                        delay_ms(1); //동시입력 방지 
+                        keyout = (keyout<<1) + 0x01; 
+                                        //스캔데이터 갱신 1110 -> 1101 -> 1011 -> 0111        
+                }
+            }               
+    }  
+  
+    void reset(void) //reset 함수   
+    {
+        PORTB = 0x00;   PORTC = 0xff;   PORTG = 0xff;   PORTE = 0xff; PORTE = 0x00; DDRE = 0x00; DDRF = 0x00;//led, 부저 초기화 
+        num = 0; //난수 초기화 
+        tri = 0; //tri 초기화 
+        buzzer_off();
+        lcd_init(16);   //lcd 16 x 2
+        lcd_clear();
+        lcd_gotoxy(4,0);
+        lcd_puts("MR TONG");
+        delay_us(500);                              
+        
+        lcd_gotoxy(2,1);
+        lcd_puts("PUSH CONTINUE");
+        delay_ms(1000);
+        while(PINF != 0xfb) continue; //start스위치를 누르면 진행
+        lcd_clear();
+        lcd_gotoxy(2, 0);
+        delay_ms(10);
+        lcd_puts("SELECT  MODE"); //처음 상태 표시
+        lcd_gotoxy(0, 1);
+        lcd_putsf("    16 |  8"); //16/8모드 선택
+        delay_ms(500);
+        mode = 16;      //기본 상태 모드 16
+        while((PINF != 0xfb)) modee(); //start 스위치를 누를때까지 모드를 정하다가 start가 되는 순간 mode 모드 탈출 하고 동시에 당첨 번호 정함 
+        lcd_clear(); 
+        lcd_gotoxy(3,1);
+        lcd_putsf("GAME READY");
+        lcd_gotoxy(0,0);
+        switch(PINE & 0xF0){ //당첨 번호(num)
+                case 0x00: num = 0; break;
+                case 0x10: num = 1; break;
+                case 0x20: num = 2; break;
+                case 0x30: num = 3; break;
+                case 0x40: num = 4; break;
+                case 0x50: num = 5; break;
+                case 0x60: num = 6; break;
+                case 0x70: num = 7; break;
+                case 0x80: num = 8; break;
+                case 0x90: num = 9; break;
+                case 0xA0: num = 10;break;
+                case 0xB0: num = 11;break;
+                case 0xC0: num = 12;break;
+                case 0xD0: num = 13;break;
+                case 0xE0: num = 14;break;
+                case 0xF0: num = 15;break;
+        }
+        if(mode == 8 && num >= 8) //8모드일때 난수값 설정
+        num = num - 8;  //8모드 일때, 당첨숫자는 0번 ~ 7번이여서 8번 ~ 16번은 8을 빼서 0~7번으로 만든다  
+            
+        DDRE = 0xff;
+            
+            switch(num){ //난수값을 led로 표시 
+                case 0: PORTE = 0x00;   break;
+                case 1: PORTE = 0x10;   break;
+                case 2: PORTE = 0x20;   break;
+                case 3: PORTE = 0x30;   break;
+                case 4: PORTE = 0x40;   break;
+                case 5: PORTE = 0x50;   break;
+                case 6: PORTE = 0x60;   break;
+                case 7: PORTE = 0x70;   break;
+                case 8: PORTE = 0x80;   break;
+                case 9: PORTE = 0x90;   break;
+                case 10: PORTE = 0xA0;  break;
+                case 11: PORTE = 0xB0;  break;
+                case 12: PORTE = 0xC0;  break;
+                case 13: PORTE = 0xD0;  break;
+                case 14: PORTE = 0xE0;  break;
+                case 15: PORTE = 0xF0;  break;
+            }
+        
+        
+        delay_ms(500);    
+        
+        brk = 0; //초기값 갱신
+        
+        while(brk == 0) {  
+            buzzer_off(); // 게임 실행 후 buzzer off 
+            tri = 1; // 0->1로 갱신
+            manager(); //시작부분으로 돌아감    
+        }  
+    }
+    
+    void main(void) 
+    {                   
+        PORTA = 0xff; DDRA = 0xff; //LCD  
+        PORTB = 0x00; DDRB = 0xff; //LED 4개 가로 1이면 on
+        PORTC = 0xff; DDRC = 0xff; //LED 8개 세로 0이면 on
+        PORTD = 0x00; DDRD = 0x0f; //키매트릭스
+        PORTE = 0x00; DDRE = 0x00; //랜덤 입력(4~7)
+        PORTF = 0xff; DDRF = 0x00; //기타 입력(16(0), 8(1), ST(2), RST(3))
+        PORTG = 0xff; DDRG = 0xff; //오디오
+        
+        while(1)  reset();                     
+    } 

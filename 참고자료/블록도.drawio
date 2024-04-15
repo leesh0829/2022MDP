@@ -1,0 +1,49 @@
+<mxfile host="app.diagrams.net" modified="2023-09-20T09:53:10.671Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" version="21.7.5" etag="kheqjtZI7JU39xeV9Nd_" type="device">
+  <diagram id="KmeOK3z8RIeW-kjtIjNT" name="페이지-1">
+    <mxGraphModel dx="1290" dy="542" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="A9dXil1ajjLkdsDf59uB-11" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="90" width="690" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="A9dXil1ajjLkdsDf59uB-1" value="Input&lt;br&gt;(모드 설정,&lt;br&gt;8/16칸 꽂기)" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="110" y="160" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="A9dXil1ajjLkdsDf59uB-2" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;width=15.833333333333334;endSize=6.058333333333334;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="210" y="199.57999999999998" as="sourcePoint" />
+            <mxPoint x="280" y="199.57999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A9dXil1ajjLkdsDf59uB-3" value="ATMega128A" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="310" y="160" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="A9dXil1ajjLkdsDf59uB-4" value="랜덤 클록" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="480" y="160" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="A9dXil1ajjLkdsDf59uB-5" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="414" y="199.58" as="sourcePoint" />
+            <mxPoint x="470" y="199.58" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A9dXil1ajjLkdsDf59uB-6" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="590" y="199.58" as="sourcePoint" />
+            <mxPoint x="650" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A9dXil1ajjLkdsDf59uB-7" value="결과 출력&lt;br&gt;(LCD, LED, FND)" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="670" y="50" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="A9dXil1ajjLkdsDf59uB-8" value="스피커(부저)" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="670" y="270" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="A9dXil1ajjLkdsDf59uB-9" value="멜로디 IC" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="670" y="160" width="80" height="80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

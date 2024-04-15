@@ -1,0 +1,240 @@
+#include <mega128.h>
+#include <delay.h>
+#asm                       
+    .equ __lcd_port = 0x1b //a포트로 사용 
+#endasm                  
+#include <lcd.h>
+
+int keyMatrix(unsigned char in);
+
+unsigned char c1[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+
+int keyMatrix(unsigned char in) //출력(keyout)  4567, 입력(keyin) 0123    
+{
+         int key;  
+            
+           switch (in) {  //입력을 받는것은 PIN으로 
+            case 0x7e : key = 0;
+                break;  
+            case 0x7d : key = 1; // 0111 1110
+                break;
+            case 0x7b : key = 2;
+                break;
+            case 0x77 : key = 3;
+                break;
+            case 0xbe : key = 4;
+                break;
+            case 0xbd : key = 5;
+                break;
+            case 0xbb : key = 6;
+                break;
+            case 0xb7 : key = 7;
+                break;
+            case 0xde : key = 8;
+                break;
+            case 0xdd : key = 9;
+                break;
+            case 0xdb : key = 10;
+                break;
+            case 0xd7 : key = 11;
+                break;
+            case 0xee : key = 12;
+                break;
+            case 0xed : key = 13;
+                break;                                               
+            case 0xeb : key = 14;
+                break;  
+            case 0xe7 : key = 15;
+                break;    
+           }   
+         
+           return key;
+           
+        }
+
+
+
+void main(void) 
+{          
+
+    
+
+    int keyout;
+    int i;
+    unsigned char matrix;
+    
+    lcd_init(16);
+   lcd_clear();
+   lcd_gotoxy(0, 0);
+   
+   delay_us(500);
+   lcd_puts("  SELECT  MODE");
+   lcd_gotoxy(0, 1);
+   lcd_putsf("     8 | 16"); 
+            
+    PORTA = 0xff; DDRA = 0xff; //LCD
+    PORTE = 0x00; DDRE = 0x00; //8모드 16모
+    DDRD = 0x0f; PORTD = 0x00; //키매트릭스                                                                                                                                          ;                                ; //스위치 키매트 
+    PORTB = 0x00; DDRB = 0xff; //  LED, 4개 가로 1이면켜 high
+    PORTC = 0x00; DDRC = 0xff; //, LED8개 세로 0이면켜짐 low
+    DDRF = 0xff; PORTF = 0x00; // 오디오ic,       
+            
+                 
+
+            
+            
+    while(1) {
+    keyout = 0xfe;  
+                
+                
+    for(i = 0; i<=3; i++) {
+    PORTD = keyout; //행 스캔 출력
+    matrix = PIND; //매트릭스에 PIND값 저장
+                  
+        if(keyMatrix(matrix) == 0)  {
+            PORTB = 0x10;
+            PORTC = 0xbf; 
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("0 SW");
+        }
+                 
+                 
+        if(keyMatrix(matrix) == 1)  {
+            PORTB = 0x10;
+            PORTC = 0xef;
+            lcd_clear();  
+            lcd_gotoxy(0,1);
+            lcd_puts("1 SW ");
+        }  
+                  
+                 
+        if(keyMatrix(matrix) == 2)  {
+            PORTB = 0x10;
+            PORTC = 0xfb;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("2 SW");
+        }
+                  
+        if(keyMatrix(matrix) == 3)  {
+            PORTB = 0x10;
+            PORTC = 0xfe;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("3 SW");
+        }
+        
+        if(keyMatrix(matrix) == 4)  {
+            PORTB = 0x20;
+            PORTC = 0xbf;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("4 SW");
+        } 
+                 
+        if(keyMatrix(matrix) == 5)  {
+            PORTB = 0x20;
+            PORTC = 0xef;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("5 SW");
+        } 
+                 
+        if(keyMatrix(matrix) == 6)  {
+            PORTB = 0x20;
+            PORTC = 0xfb;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("6 SW");
+        }
+                 
+        if(keyMatrix(matrix) == 7)  {
+            PORTB = 0x20;
+            PORTC = 0xfe;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("7 SW");
+        } 
+        
+        if(keyMatrix(matrix) == 8)  {
+            PORTB = 0x40;
+            PORTC = 0xbf; 
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("8 SW");
+        }
+                 
+                 
+        if(keyMatrix(matrix) == 9)  {
+            PORTB = 0x40;
+            PORTC = 0xef;
+            lcd_clear();  
+            lcd_gotoxy(0,1);
+            lcd_puts("9 SW ");
+        }  
+                  
+                 
+        if(keyMatrix(matrix) == 10)  {
+            PORTB = 0x40;
+            PORTC = 0xfb;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("A SW");
+        }
+                  
+        if(keyMatrix(matrix) == 11)  {
+            PORTB = 0x40;
+            PORTC = 0xfe;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("B SW");
+        }
+        
+        if(keyMatrix(matrix) == 12)  {
+            PORTB = 0x80;
+            PORTC = 0xbf;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("C SW");
+        } 
+                 
+        if(keyMatrix(matrix) == 13)  {
+            PORTB = 0x80;
+            PORTC = 0xef;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("D SW");
+        } 
+                 
+        if(keyMatrix(matrix) == 14)  {
+            PORTB = 0x80;
+            PORTC = 0xfb;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("E SW");
+        }
+                 
+        if(keyMatrix(matrix) == 15)  {
+            PORTB = 0x80;
+            PORTC = 0xfe;
+            lcd_clear();  
+            lcd_gotoxy(0,1); 
+            lcd_puts("F SW");
+        }
+                 
+                       
+                 
+                 
+        delay_ms(1);
+        keyout = (keyout<<1) + 0x01;       
+                 
+                   
+                 
+                
+        }   
+                
+    }     
+              
+            
+}

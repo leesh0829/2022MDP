@@ -1,0 +1,35 @@
+//PORTA : LED(8개모드, 16개모드) -> LCD 					C->A
+//PORTB:  X -> LED (HIGH)							A,F->B,C
+//PORTC : LCD -> LED (LOW)						A,F->B,C
+//PORTD : 8모드(0), 16모드(1), start(2), reset(3), 랜덤입력(4~7) -> 키매트릭스		E->D
+//PORTE : 키매트릭스 -> 랜덤 입력(4~7)					D->E
+//PORTF : LED(16개모드일 때 사용) -> 기타 입력(16(0), 8(1), ST(2), RST(3))		D->F
+//PORTG : buzzer(0) -> 멜로디(사운드)						G->G
+//승현: FND MELODY RANDOMCLOCK
+//병현: LCD LED SW
+8모드 12모드선택
+led 직렬 12포트 티끌모아서 전부 쓰기
+
+
+
+
+PORTG = 0xff; //노래끄기
+PORTG = 0xfb; //노래 키기 왈츠
+PORTG = 0xfd; //노래 키기 사이렌
+
+PORTB = 0x 0000 0000;
+PORTB = 0x01;
+PORTC = 0x 1111 1111;
+POTC = 0xfe;
+
+DDRF = 0x1111 0000 //0~3포트 입력, 4~7 출력
+DDRF = 0xf0;
+
+PORTF = 0x1111 1110
+
+PORTF = 0x1111 1110 //full	0xfe
+PORTF = 0x1111 1101 //half	0xfd
+PORTF = 0x1111 1011 //st	0xfb
+PORTF = 0x1111 0111 //rst 	0xf7
+
+1111 1011

@@ -1,0 +1,5 @@
+u-d fnd: 뒷판기준 왼: gnd 3 +5v
+		오:bcdeg (bg는 sw에 나머지는 gnd직렬)
+
+h-f fnd: 뒷판기준	왼: 동일
+		오:aefg (efg는 gnd직렬, a는 16모드, c는 8모드 sw에)

@@ -1,0 +1,320 @@
+#include <mega128.h>
+#include <delay.h>
+#asm
+   .equ __lcd_port=0x1B;
+#endasm                                     
+#include <lcd.h>                                    
+
+
+unsigned int delay = 250;   //딜레이
+unsigned int i;             //for문 사용시
+unsigned int j;             //for문 사용시
+unsigned int mode = 16;     //8모드 / 16모드 상태 함수 (기본값은 16함수)
+unsigned int brick = 0;     //reset을 따로 만들기 위해 main함수에서 operate를 반복시키는데 이때 operate를 초기화 하기 위해 operate함수를 탈출 시킬 변수
+unsigned int random = 0;    //랜덤 클락에서 받아온 숫자
+unsigned int num = 0;       //랜덤으로 정해진 당첨 숫자
+unsigned int brk = 0;       //reset 함수에서 main 함수에서 resett을 루프하는데 resett함수를 바로 탈출 시켜서 실행을 못하게 하는 변수 
+
+
+void modee() //모드 설정 함수
+{
+    if(PINF & 0xfe) //16모드 입력
+    {
+        mode = 16;
+        lcd_clear();
+        lcd_gotoxy(0,1);
+        lcd_putsf("Select mode");
+        lcd_gotoxy(0,2);
+        lcd_putsf("Currect mode: 8");
+        PORTF = 0x7f;
+        PORTB = 0x00;
+        PORTC = 0xff;
+    }
+     
+    if(PINF & 0xfd) //8모드 입력
+    {
+        mode = 8;
+        lcd_clear();
+        lcd_gotoxy(0,1);
+        lcd_putsf("Select mode");
+        lcd_gotoxy(0,2);
+        lcd_putsf("Currect mode: 16");
+        PORTF = 0xbf;
+        PORTB = 0x00;
+        PORTC = 0xff;
+    }   
+}
+
+void KeyMatrix(void)
+{
+    int keyout = 0xfe;
+    for(i = 0; i <= 3; i++)
+    {
+        PORTD = keyout;
+        delay_ms(1);
+        switch (PIND & 0xF0)
+               {
+                case 0x70:
+                if(mode == 8)    break;
+                if(12 + i == num)
+                {
+                    brk = 1;
+                    lcd_clear();
+                    gotoxy(0,1);
+                    lcd_putsf("Swith Input");
+                    lcd_putchar( (num + 1) / 10 + '0' );      
+                    lcd_putchar( (num + 1) % 10 + '0' );
+                    lcd_putsf(" is bomb number");
+                    lcd_gotoxy(6, 1);
+                    lcd_putsf("Well done");
+                    buzzer();
+                    for(j = 0; j < 2; j++)
+                    {
+                        PORTB = 0x10 << i;
+                        PORTC = 0x00;
+                        delay_ms(del * 2);
+                        PORTB = 0x00;
+                        PORTA = 0x00;
+                        delay_ms(del * 2);
+                    }
+                    break;
+                }
+                lcd_clear();
+                lcd_gotoxy(0,1);
+                lcd_putsf("ur SW:");
+                lcd_putchar( (13 + i) / 10 + '0');
+                lcd_putchar( (13 + i) % 10 + '0');
+                lcd_putsf(" is not bomb");
+                lcd_gotoxy(0,2);
+                lcd_putsf("Select Next SW");
+                PORTB | = 0x10 << i;
+                delay_ms(100);
+                break;
+               case 0xB0:
+                if(mode == 8)
+                break;
+                if(8 + i == num)
+                {
+                    brk = 1;
+                    lcd_clear();
+                    lcd_gotoxy(0,1);
+                    lcd_putsf("this sw");
+                    lcd_putchar( (num + 1) / 10 + '0');
+                    lcd_putchar( (num % 10 + 1) + '0');
+                    lcd_putsf(" is bomb");
+                    lcd_gotoxy(0,2);
+                    lcd_putsf("Well done");
+                    buzzer();
+                    for(j=0; j<2; j++){
+                        PORTB = 0x01<<i;    
+                        PORTC = 0x00;    
+                        delay_ms(del*2);
+                        PORTB = 0x00;   
+                        PORTC = 0x00;   
+                        delay_ms(del*2);
+                    } 
+                    break; 
+                }
+                lcd_clear();
+                lcd_gotoxy(0,1);
+                lcd_putsf("SW: ");
+                lcd_putchar( (9+i) / 10 + '0');
+                lcd_putchar( (9 + i) % i + '0');
+                lcd_putsf(" not bomb");
+                lcd_gotoxy(0,2);
+                lcd_putsf("Select next SW");
+                PORTB |= 0x01 << i;
+                delay_ms(100);
+                break;
+               case 0xD0;
+                if(4 + i == num)
+                {
+                    brk = 1;
+                    lcd_clear();
+                    lcd_gotoxy(0,1);
+                    lcd_putsf("this SW");
+                    lcd_putchar( (num + 1) / 10 + '0');
+                    lcd_putchar( (num + 1) % 10 + '0');
+                    lcd_putsf("is Bomb");
+                    lcd_gotoxy(0,2);
+                    lcd_putsf("Well done");
+                    buzzer();
+                    for(j = 0; j < 2; j++)
+                    {
+                        PORTB = 0x10 << i;
+                        PORTC = 0x00;
+                        delay_ms(del * 2);
+                        PORTB = 0x00;
+                        PORTC = 0x00;
+                        delay_ms(del*2);
+                    }
+                    break;
+                }
+                lcd_clear();
+                lcd_gotoxy(0,0);    
+                lcd_putsf("SW:");
+                lcd_putchar((5+i)/10+'0'); 
+                lcd_putchar((5+i)%10+'0');
+                lcd_putsf(" Not Bomb");
+                lcd_gotoxy(1,1);
+                lcd_putsf("Select Next SW"); 
+                PORTB |= 0x10<<i;
+                delay_ms(100);
+                break;
+               case 0xE0:    
+                if(0+i==num){ 
+                    brk=1;
+                    lcd_clear();     
+                    lcd_gotoxy(0,0);    lcd_putsf("this SW");   
+                    lcd_putchar((num+1)/10+'0'); 
+                    lcd_putchar((num+1)%10+'0');
+                    lcd_putsf("is Bomb");
+                    lcd_gotoxy(0,1);
+                    lcd_putsf("Well done");  
+                    buzzer();
+                    for(j=0; j<2; j++){
+                        PORTB = 0x01<<i;    
+                        PORTC = 0x00;    
+                        delay_ms(del*2);
+                        PORTB = 0x00;   
+                        PORTC = 0x00;   
+                        delay_ms(del*2);
+                    }      
+                break; 
+                }      
+                lcd_clear();
+                lcd_gotoxy(0,0);    
+                lcd_putsf("SW:");
+                lcd_putchar((1+i)/10+'0'); 
+                lcd_putchar((1+i)%10+'0');
+                lcd_putsf(" Not Bomb");
+                lcd_gotoxy(1,1);
+                lcd_putsf("Select Next SW");
+                PORTB |= 0x01<<i;  
+                delay_ms(100);
+                break; 
+               }
+               keyout = (keyout << 1) + 0x01;
+    }  
+}
+
+void buzzer(void)
+{
+    PORTG = 0xFD;
+}
+
+void buzzerr(void)
+{
+    PORTG = 0xFB;
+}
+
+/* void mode08finish(){ //모드가 8이면 led 8개만 켜져야 하니까 led 8개로 마무리이벤트
+    int finBrk=0;
+    PORTA = 0x00;   PORTF = 0x00;
+    PORTA = 0x11;   delay_ms(del);
+    PORTA = 0x22;   delay_ms(del);
+    PORTA = 0x44;   delay_ms(del);
+    PORTA = 0x88;   delay_ms(del);
+    while(finBrk==0){
+        for(i=0; i<100; i++){	
+            if(!(PIND&0x08)) {finBrk=1; break;}
+            if(i<50){PORTA = 0xFF;   delay_ms(10);}
+            if(i>=50){PORTA = 0x00;   delay_ms(10);}
+        }                          
+    }
+}
+
+void mode16finish(){ //모드가 16이면 led 16개 전부 켜져야 하니까 led 16개로 마무리 이벤트
+    int finBrk=0; 
+    PORTA = 0x00;   PORTF = 0x00; 
+    PORTA = 0x0F;   delay_ms(del);  
+    PORTA = 0xF0;   delay_ms(del);  
+    PORTA = 0x00;
+    PORTF = 0x0F;   delay_ms(del);
+    PORTF = 0xF0;   delay_ms(del);  
+    while(finBrk==0)
+        for(i=0; i<100; i++){
+            if(!(PIND&0x08)) {finBrk=1; break;}
+            if(i<50){PORTA = 0xFF;   PORTF = 0xFF;  delay_ms(10);}
+            if(i>=50){PORTA = 0x00;   PORTF = 0x00; delay_ms(10);}
+        }                          
+} */
+
+void resett(void) 
+{
+    PORTB = 0x00;   PORTC = 0xff;   PORTG = 0xff;   //led, 부저 초기화
+    lcd_init(16);   //lcd 초기화
+    lcd_gotoxy(0,0);
+    lcd_clear();
+    lcd_gotoxy(0, 0);
+    delay_ms(1000);
+    lcd_puts("  SELECT  MODE"); //처음 상태 표시
+    lcd_gotoxy(0, 1);
+    lcd_putsf("     8 | 16");
+    delay_ms(1000);
+    buzzerr();
+    mode = 0;                  //모드는 입력받도록
+    while((PINF & 0xf4)) modee(); //start 스위치를 누를때까지 모드를 정하다가 start가 되는 순간 mode 모드 탈출 하고 동시에 당첨 번호 정함 
+    switch(PINE & 0xF0){ //당첨 번호
+        case 0x00: num = 0; break;
+        case 0x10: num = 1; break;
+        case 0x20: num = 2; break;
+        case 0x30: num = 3; break;
+        case 0x40: num = 4; break;
+        case 0x50: num = 5; break;
+        case 0x60: num = 6; break;
+        case 0x70: num = 7; break;
+        case 0x80: num = 8; break;
+        case 0x90: num = 9; break;
+        case 0xA0: num = 10;break;
+        case 0xB0: num = 11;break;
+        case 0xC0: num = 12;break;
+        case 0xD0: num = 13;break;
+        case 0xE0: num = 14;break;
+        case 0xF0: num = 15;break;
+    }
+    lcd_clear();
+    lcd_gotoxy(0,1);
+    lcd_putsf("START GAME");
+    if(mode == 8 && num >= 8)
+        num = num - 8;  //8모드 일때, 당첨숫자는 0번 ~ 7번이여서 8번 ~ 16번은 8을 빼서 0~7번으로 만든다
+    PORTB = 0x00;   PORTC = 0xff;   PORTG = 0xff;
+    brk = 0;
+    while(brk == 0)
+        KeyMatrix();
+    //if(mode == 8)
+        //mode8fin();
+    //if(mode == 16)
+        //mode16fin();  
+}
+
+void main(void) //초기화 
+{
+    PORTA=0xff;
+    DDRA=0xff; 
+    PORTB = 0x00;
+    DDRB = 0xff;
+    PORTC = 0xff;
+    DDRC = 0xff;
+    PORTD = 0x00;
+    DDRD = 0x00; 
+    PORTE = 0x00;
+    DDRE = 0xff;
+    PORTF = 0xff;
+    DDRF = 0x00;    
+    PORTG = 0xff;   //노래가 꺼진 상태   
+    DDRG = 0xff;   
+
+   /*lcd_init(16);
+   lcd_clear();
+   lcd_gotoxy(0, 0);
+   
+   delay_us(500);
+   lcd_puts("  SELECT  MODE");
+   lcd_gotoxy(0, 1);
+   lcd_putsf("     8 | 16"); */
+    
+
+   while (1)
+    resett();
+}
